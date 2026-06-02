@@ -1,0 +1,59 @@
+services:
+  # ---------- Backend: Node web service ----------
+  - type: web
+    name: interviewai-api
+    runtime: node
+    plan: free
+    region: oregon
+    rootDir: server
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /api/v1/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: CLIENT_URL
+        value: https://interviewai-web.onrender.com
+      - key: JWT_ACCESS_EXPIRY
+        value: 15m
+      - key: JWT_REFRESH_EXPIRY
+        value: 7d
+      - key: GEMINI_MODEL
+        value: gemini-2.5-flash
+      - key: AI_PROVIDER
+        value: gemini
+      - key: AI_MAX_REPAIRS
+        value: "2"
+      - { key: MONGO_URI,             sync: false }
+      - { key: JWT_ACCESS_SECRET,     sync: false }
+      - { key: JWT_REFRESH_SECRET,    sync: false }
+      - { key: CLOUDINARY_CLOUD_NAME, sync: false }
+      - { key: CLOUDINARY_API_KEY,    sync: false }
+      - { key: CLOUDINARY_API_SECRET, sync: false }
+      - { key: GEMINI_API_KEY,        sync: false }
+      - { key: SMTP_HOST,             sync: false }
+      - { key: SMTP_PORT,             sync: false }
+      - { key: SMTP_USER,             sync: false }
+      - { key: SMTP_PASS,             sync: false }
+
+  # ---------- Frontend: static site ----------
+  - type: web
+    name: interviewai-web
+    runtime: static
+    rootDir: client
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    autoDeploy: true
+    envVars:
+      - key: VITE_API_URL
+        value: /api/v1
+      - key: VITE_SOCKET_URL
+        value: https://interviewai-api.onrender.com
+    routes:
+      - type: rewrite
+        source: /api/*
+        destination: https://${interviewai-api.publicHost}/api/*
+      - type: rewrite
+        source: /*
+        destination: /index.html
